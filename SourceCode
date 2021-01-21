@@ -11,7 +11,7 @@ Set objFSO = CreateObject("Scripting.FileSystemObject")
 
 'Write txt file location for the "..." by ReadFile subprocedure
 
-strRequestText=ReadFile("...\WebServiceRequestResponse\Request\WebServiceRequest.txt")  'Read webservice request
+strRequestText=ReadFile("...\WebServiceRequestResponse\WebServiceRequest.txt")  'Read webservice request
 'txt file content 
 'URL;Process;Number1;Number2   
 
