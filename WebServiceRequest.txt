@@ -1,0 +1,1 @@
+http://dneonline.com/calculator.asmx?WSDL;Multiply;5;5
