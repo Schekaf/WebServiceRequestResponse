@@ -1,0 +1,121 @@
+Option Explicit
+Dim strRequestText
+Dim URL,in1,in2,action,out1
+Dim arrInput
+Dim webServiceRequest,responseText
+Dim objFSO,logfolder,sLogFileName,logfile
+Dim oXMLHTTP,oXMLDoc,strEnvelope
+Dim uResult,chAction
+
+Set objFSO = CreateObject("Scripting.FileSystemObject") 
+
+'Write txt file location for the "..." by ReadFile subprocedure
+
+strRequestText=ReadFile("...\WebServiceRequestResponse\Request\WebServiceRequest.txt")  'Read webservice request
+'txt file content 
+'URL;Process;Number1;Number2   
+
+arrInput=Split(strRequestText,";")
+URL=arrInput(0)
+action=arrInput(1)
+in1=arrInput(2)
+in2=arrInput(3)
+
+webServiceRequest="<?xml version=""1.0"" encoding=""utf-8""?>"&_
+"<soap:Envelope xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema"" xmlns:soap=""http://schemas.xmlsoap.org/soap/envelope/"">"&_
+ "<soap:Body>"&_
+    "<"&action&" xmlns=""http://tempuri.org/"">"""&_
+      "<intA>"&in1&"</intA>"&_
+      "<intB>"&in2&"</intB>"&_
+    "</"&action&">"&_
+  "</soap:Body>"&_
+"</soap:Envelope>"
+
+ProcessSend(webServiceRequest) 'Send request to webservice
+
+' ************************************************************************
+'**************      Creating Response Log File Location		*********************
+
+logfolder    = "C:\Users\Schekaf\Desktop\WebServiceRequestResponse\Response"
+
+sLogFileName = "WebServiceResponse"&"_" & Day(Now) &"-"&Month(Now) & "-" & Year(Now) & "__" & Hour(Now) & "_"  & Minute(Now) & "_log.txt"
+
+logfile = objFSO.BuildPath(logfolder, sLogFileName)
+
+
+' ************************************************************************
+' *********************	Create/Writing Log File		************************
+
+If action="Add" Then
+	chAction="+"
+	ElseIf action="Subtract" Then
+	chAction="-"
+	ElseIf action="Multiply" Then
+	chAction="*"
+	ElseIf action="Divide" Then
+	chAction=":"	
+End If
+
+responseText=in1&" "&chAction&" "&in2&" = "&out1.text
+
+WriteFileLine logfile,responseText
+
+' ************************************************************************
+' ***********************		Deleting Log File		************************
+uResult=MsgBox("Response file will be deleted.",4,"Info")
+If uResult=6 Then
+	DeleteAFile(logfile)
+	Else If uResult=7 Then		
+		msgbox "Response file was not deleted."
+	End If
+End If
+
+'************************************************************************
+
+function ReadFile(strFilePathToRead)
+	Dim textStream,oFSO,oFile
+	Set oFSO=createobject("Scripting.FileSystemObject")
+	Set textStream=oFSO.OpenTextFile(strFilePathToRead,1)
+	ReadFile = textStream.ReadAll
+	Set oFSO = nothing
+End function
+
+Sub WriteFileLine(sLogFileNameFull, sLogFileLine)
+    Dim MyLog
+    Set MyLog = objFSO.OpenTextFile(sLogFileNameFull, 8, True)
+    MyLog.WriteLine Now & vbTab & "-" & vbTab & sLogFileLine
+    MyLog.Close
+End Sub
+
+function ProcessSend(strEnvelope)     	
+     Set oXMLHTTP = CreateObject("MSXML2.XMLHTTP")
+     'Set oXMLDoc = CreateObject("MSXML2.DOMDocument")
+    oXMLHTTP.onreadystatechange = getRef("HandleStateChange")        
+    call oXMLHTTP.open("POST",URL,false)
+    call oXMLHTTP.setRequestHeader("Content-Type","text/xml; charset=utf-8") 
+    call oXMLHTTP.setRequestHeader("Content-Lenght","lenght") 
+    call oXMLHTTP.setRequestHeader("SOAPAction","http://tempuri.org/"&action&"") 
+    call oXMLHTTP.send(strEnvelope)
+    msgbox "Request sended..."
+end function
+
+Sub HandleStateChange 
+	Dim response,oXMLDoc
+	Set oXMLDoc = CreateObject("MSXML2.DOMDocument")   	
+    if(oXMLHTTP.readyState = 4) then    
+        dim szResponse: szResponse = oXMLHTTP.responseText
+        call oXMLDoc.loadXML(szResponse)
+        if(oXMLDoc.parseError.errorCode <> 0) then
+                'call msgbox("ERROR")                
+                response = oXMLHTTP.responseText&" "&oXMLDoc.parseError.reason
+                msgbox(oXMLDoc.parseError.reason)
+        else
+              set out1=oXMLDoc.getElementsByTagName(action&"Result")(0)			
+        end if
+    end if
+End Sub
+
+Sub DeleteAfile(sDeleteFilePath)
+	objFSO.DeleteFile(sDeleteFilePath)
+	Set objFSO=nothing
+End Sub
